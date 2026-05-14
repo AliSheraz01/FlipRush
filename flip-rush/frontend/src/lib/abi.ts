@@ -80,5 +80,12 @@ export const USDC_ABI = [
     "name": "allowance",
     "outputs": [{"name": "remaining", "type": "uint256"}],
     "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"name": "", "type": "uint8"}],
+    "type": "function"
   }
 ] as const;

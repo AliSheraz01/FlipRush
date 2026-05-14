@@ -7,8 +7,7 @@ import {
   useAccount, 
   useReadContract, 
   useWriteContract, 
-  useWaitForTransactionReceipt,
-  useBalance
+  useWaitForTransactionReceipt
 } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
 import { FLIP_RUSH_ABI, USDC_ABI } from '@/lib/abi';
@@ -31,9 +30,17 @@ export function GameUI() {
     };
   }, [address]);
 
-  const { data: balanceData } = useBalance({
-    address,
-    token: USDC_ADDRESS,
+  const { data: balanceData } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: USDC_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+  });
+
+  const { data: decimals } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: USDC_ABI,
+    functionName: 'decimals',
   });
 
   const { data: allowance } = useReadContract({
@@ -108,7 +115,7 @@ export function GameUI() {
         <h2 className="text-xl font-bold text-white tracking-wider">FLIP RUSH</h2>
         <div className="text-xs text-zinc-400 bg-white/5 px-3 py-1 rounded-full border border-white/10">
           Balance: <span className="text-cyan-400 font-bold">
-            {balanceData ? parseFloat(formatUnits(balanceData.value, balanceData.decimals)).toFixed(2) : '0.00'} USDC
+            {balanceData && decimals ? parseFloat(formatUnits(balanceData as bigint, decimals as number)).toFixed(2) : '0.00'} USDC
           </span>
         </div>
       </div>
