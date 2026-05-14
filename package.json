@@ -1,0 +1,12 @@
+{
+  "name": "flip-rush-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd flip-rush/frontend && npm install --legacy-peer-deps && npm run build",
+    "install": "cd flip-rush/frontend && npm install --legacy-peer-deps"
+  },
+  "dependencies": {
+    "next": "^16.2.6"
+  }
+}

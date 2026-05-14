@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd flip-rush/frontend && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "flip-rush/frontend/.next",
   "framework": "nextjs"
 }
