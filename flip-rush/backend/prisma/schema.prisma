@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique
+  username      String?
+  wins          Int      @default(0)
+  losses        Int      @default(0)
+  totalWagered  Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  matches1      Match[]  @relation("Player1")
+  matches2      Match[]  @relation("Player2")
+  wonMatches    Match[]  @relation("Winner")
+}
+
+model Match {
+  id        String   @id @default(uuid())
+  gameId    Int?     @unique // On-chain game ID
+  player1Id String
+  player1   User     @relation("Player1", fields: [player1Id], references: [id])
+  player2Id String?
+  player2   User?    @relation("Player2", fields: [player2Id], references: [id])
+  winnerId  String?
+  winner    User?    @relation("Winner", fields: [winnerId], references: [id])
+  entryFee  Float
+  winningSide Int?   // 0 for HEADS, 1 for TAILS
+  status    String   // OPEN, JOINED, SETTLED, CANCELLED
+  createdAt DateTime @default(now())
+}
