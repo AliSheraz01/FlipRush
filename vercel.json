@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd flip-rush/frontend && npm install --legacy-peer-deps && npm run build",
-  "installCommand": "npm install && cd flip-rush/frontend && npm install --legacy-peer-deps",
+  "buildCommand": "npm run build --workspace=frontend",
+  "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": "flip-rush/frontend/.next",
   "framework": "nextjs"
 }

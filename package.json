@@ -1,20 +1,13 @@
 {
-  "name": "flip-rush-root",
+  "name": "flip-rush-monorepo",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "flip-rush/frontend",
+    "flip-rush/backend"
+  ],
   "scripts": {
-    "build": "cd flip-rush/frontend && npm install --legacy-peer-deps && npm run build",
-    "install": "cd flip-rush/frontend && npm install --legacy-peer-deps"
-  },
-  "dependencies": {
-    "next": "^16.2.6",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
-  },
-  "devDependencies": {
-    "tailwindcss": "^4",
-    "@tailwindcss/postcss": "^4",
-    "postcss": "^8",
-    "typescript": "^5"
+    "build": "npm run build --workspace=frontend",
+    "install-all": "npm install --legacy-peer-deps"
   }
 }
