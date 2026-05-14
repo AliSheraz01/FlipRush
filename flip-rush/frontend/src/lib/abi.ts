@@ -49,8 +49,51 @@ export const FLIP_RUSH_ABI = [
     ],
     "name": "GameCreated",
     "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "gameId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "player2",
+        "type": "address"
+      }
+    ],
+    "name": "GameJoined",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "gameId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "winner",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum FlipRush.Side",
+        "name": "winningSide",
+        "type": "uint8"
+      }
+    ],
+    "name": "GameSettled",
+    "type": "event"
   }
-  // Add more if needed, but these are the main ones for the bet
 ] as const;
 
 export const USDC_ABI = [

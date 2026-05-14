@@ -64,15 +64,25 @@ io.on('connection', (socket) => {
     const { gameId, participant } = data;
     const gameIndex = activeGames.findIndex(g => g.gameId === gameId);
     if (gameIndex !== -1) {
-      activeGames[gameIndex].status = 'matched';
-      activeGames[gameIndex].participant = participant;
-      io.emit('gameMatched', activeGames[gameIndex]);
+      const game = activeGames[gameIndex];
+      game.status = 'matched';
+      game.participant = participant;
+      io.emit('gameMatched', game);
       
-      // Remove from active games list after some time or when settled
+      // Simulate on-chain settlement delay
       setTimeout(() => {
+        const winningSide = Math.random() > 0.5 ? 0 : 1; // 0: heads, 1: tails
+        const winner = winningSide === (game.side === 'heads' ? 0 : 1) ? game.creator : participant;
+        
+        io.emit('gameResult', {
+          gameId,
+          winner,
+          winningSide
+        });
+
         activeGames.splice(gameIndex, 1);
         io.emit('lobbyUpdate', { lobby, activeGames });
-      }, 5000);
+      }, 3000);
     }
   });
 

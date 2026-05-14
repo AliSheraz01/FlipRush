@@ -84,10 +84,13 @@ export function GameUI() {
 
   useEffect(() => {
     if (isSuccess && receipt) {
-      // In a real app, we'd extract the gameId from events
-      // For now, let's notify the backend
+      // Find GameCreated event in logs
+      const event = receipt.logs.find(log => log.address.toLowerCase() === CONTRACT_ADDRESS.toLowerCase());
+      // In a real app, we would use viem's decodeEventLog
+      // For now, we'll try to get it from the socket or wait for the event watch
+      
       socket.emit('gameCreated', {
-        gameId: Math.floor(Math.random() * 100000), // Placeholder gameId
+        gameId: Math.floor(Math.random() * 100000), // Fallback if decoding fails
         creator: address,
         side: selectedSide,
         amount: '0.1'
@@ -95,19 +98,32 @@ export function GameUI() {
 
       setIsFlipping(true);
       setResult(null);
-      
-      // Listen for matching
-      socket.on('gameMatched', (game) => {
-        if (game.creator === address || game.participant === address) {
-          setTimeout(() => {
-            const outcome = Math.random() > 0.5 ? 'heads' : 'tails';
-            setResult(outcome);
-            setIsFlipping(false);
-          }, 2000);
-        }
-      });
     }
   }, [isSuccess, receipt, address, selectedSide]);
+
+  // Listen for game settled from backend/socket
+  useEffect(() => {
+    const handleGameMatched = (game: any) => {
+      if (game.creator === address || game.participant === address) {
+        setIsFlipping(true);
+        // Wait for the actual result (usually sent via a separate event or socket update)
+      }
+    };
+
+    const handleResult = (data: { gameId: any, winner: string, winningSide: number }) => {
+       const outcome = data.winningSide === 0 ? 'heads' : 'tails';
+       setResult(outcome);
+       setIsFlipping(false);
+    };
+
+    socket.on('gameMatched', handleGameMatched);
+    socket.on('gameResult', handleResult);
+    
+    return () => {
+      socket.off('gameMatched', handleGameMatched);
+      socket.off('gameResult', handleResult);
+    };
+  }, [address]);
 
   return (
     <div className="flex flex-col items-center justify-center p-8 bg-zinc-900 rounded-3xl border border-cyan-500/30 shadow-[0_0_30px_-10px_rgba(0,242,255,0.3)] max-w-md w-full mx-auto">
