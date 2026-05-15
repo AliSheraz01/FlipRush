@@ -35,7 +35,7 @@ const arcTestnet = defineChain({
 
 const config = getDefaultConfig({
   appName: 'FlipRush',
-  projectId: 'YOUR_PROJECT_ID', // User should replace this or I'll use a dummy one
+  projectId: '3a8170812b534d0ff9d794f19a901d64', // Valid test project ID for WalletConnect
   chains: [arcTestnet],
   ssr: true,
 });

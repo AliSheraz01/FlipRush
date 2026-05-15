@@ -56,6 +56,9 @@ io.on('connection', (socket) => {
 
   socket.on('gameCreated', (gameData) => {
     // gameData: { gameId, creator, side, amount }
+    if (!gameData.status) {
+      gameData.status = 'pending';
+    }
     activeGames.push(gameData);
     io.emit('lobbyUpdate', { lobby, activeGames });
   });
@@ -68,27 +71,39 @@ io.on('connection', (socket) => {
       game.status = 'matched';
       game.participant = participant;
       io.emit('gameMatched', game);
-      
-      // Simulate on-chain settlement delay
-      setTimeout(() => {
-        const winningSide = Math.random() > 0.5 ? 0 : 1; // 0: heads, 1: tails
-        const winner = winningSide === (game.side === 'heads' ? 0 : 1) ? game.creator : participant;
-        
-        io.emit('gameResult', {
-          gameId,
-          winner,
-          winningSide
-        });
+      io.emit('lobbyUpdate', { lobby, activeGames });
+    }
+  });
 
+  socket.on('gameSettledFromChain', (data) => {
+    const { gameId, winner, winningSide } = data;
+    const gameIndex = activeGames.findIndex(g => g.gameId === gameId);
+    
+    // Maintain animation delay
+    setTimeout(() => {
+      io.emit('gameResult', {
+        gameId,
+        winner,
+        winningSide
+      });
+
+      if (gameIndex !== -1) {
         activeGames.splice(gameIndex, 1);
         io.emit('lobbyUpdate', { lobby, activeGames });
-      }, 3000);
-    }
+      }
+    }, 3000);
   });
 
   socket.on('disconnect', () => {
     const index = lobby.findIndex(u => u.socketId === socket.id);
     if (index !== -1) {
+      const user = lobby[index];
+      // Clean up unmatched games created by this user
+      for (let i = activeGames.length - 1; i >= 0; i--) {
+        if (activeGames[i].creator === user.walletAddress && activeGames[i].status !== 'matched') {
+          activeGames.splice(i, 1);
+        }
+      }
       lobby.splice(index, 1);
       io.emit('lobbyUpdate', { lobby, activeGames });
     }

@@ -9,7 +9,7 @@ import {
   useWriteContract, 
   useWaitForTransactionReceipt
 } from 'wagmi';
-import { parseUnits, formatUnits } from 'viem';
+import { parseUnits, formatUnits, decodeEventLog } from 'viem';
 import { FLIP_RUSH_ABI, USDC_ABI } from '@/lib/abi';
 import { CONTRACT_ADDRESS, USDC_ADDRESS } from '@/lib/constants';
 import { socket } from '@/lib/socket';
@@ -20,12 +20,19 @@ export function GameUI() {
   const [selectedSide, setSelectedSide] = useState<'heads' | 'tails'>('heads');
   const [result, setResult] = useState<'heads' | 'tails' | null>(null);
 
+  const [activeGames, setActiveGames] = useState<any[]>([]);
+
   useEffect(() => {
     if (address) {
       socket.connect();
       socket.emit('joinLobby', { walletAddress: address });
+      
+      socket.on('lobbyUpdate', (data) => {
+        setActiveGames(data.activeGames || []);
+      });
     }
     return () => {
+      socket.off('lobbyUpdate');
       socket.disconnect();
     };
   }, [address]);
@@ -71,12 +78,28 @@ export function GameUI() {
         return;
       }
 
-      writeContract({
-        address: CONTRACT_ADDRESS,
-        abi: FLIP_RUSH_ABI,
-        functionName: 'createGame',
-        args: [sideValue],
-      });
+      const desiredOppositeSide = selectedSide === 'heads' ? 'tails' : 'heads';
+      const availableGame = activeGames.find(g => 
+        g.creator !== address && 
+        !g.participant && 
+        g.side === desiredOppositeSide
+      );
+
+      if (availableGame) {
+        writeContract({
+          address: CONTRACT_ADDRESS,
+          abi: FLIP_RUSH_ABI,
+          functionName: 'joinGame',
+          args: [BigInt(availableGame.gameId)],
+        });
+      } else {
+        writeContract({
+          address: CONTRACT_ADDRESS,
+          abi: FLIP_RUSH_ABI,
+          functionName: 'createGame',
+          args: [sideValue],
+        });
+      }
     } catch (error) {
       console.error('Bet failed:', error);
     }
@@ -84,17 +107,46 @@ export function GameUI() {
 
   useEffect(() => {
     if (isSuccess && receipt) {
-      // Find GameCreated event in logs
-      const event = receipt.logs.find(log => log.address.toLowerCase() === CONTRACT_ADDRESS.toLowerCase());
-      // In a real app, we would use viem's decodeEventLog
-      // For now, we'll try to get it from the socket or wait for the event watch
+      let createdGameEvent: any = null;
+      let joinedGameEvent: any = null;
+      let settledGameEvent: any = null;
+
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() === CONTRACT_ADDRESS.toLowerCase()) {
+          try {
+            const decoded = decodeEventLog({
+              abi: FLIP_RUSH_ABI,
+              data: log.data,
+              topics: log.topics
+            });
+            if (decoded.eventName === 'GameCreated') createdGameEvent = decoded;
+            if (decoded.eventName === 'GameJoined') joinedGameEvent = decoded;
+            if (decoded.eventName === 'GameSettled') settledGameEvent = decoded;
+          } catch(e) {}
+        }
+      }
       
-      socket.emit('gameCreated', {
-        gameId: Math.floor(Math.random() * 100000), // Fallback if decoding fails
-        creator: address,
-        side: selectedSide,
-        amount: '0.1'
-      });
+      if (createdGameEvent) {
+        socket.emit('gameCreated', {
+          gameId: Number(createdGameEvent.args.gameId),
+          creator: address,
+          side: selectedSide,
+          amount: '0.1'
+        });
+      } else if (joinedGameEvent) {
+        socket.emit('gameJoined', {
+          gameId: Number(joinedGameEvent.args.gameId),
+          participant: address
+        });
+      }
+
+      if (settledGameEvent) {
+        socket.emit('gameSettledFromChain', {
+          gameId: Number(settledGameEvent.args.gameId),
+          winner: settledGameEvent.args.winner,
+          winningSide: Number(settledGameEvent.args.winningSide)
+        });
+      }
 
       setIsFlipping(true);
       setResult(null);
